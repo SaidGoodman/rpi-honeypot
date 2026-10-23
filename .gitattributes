@@ -1,0 +1,4 @@
+# Все текстовые файлы хранятся с переводом строки LF:
+# скрипты bash с CRLF (Windows) не запускаются на Raspberry Pi.
+* text=auto eol=lf
+*.png binary

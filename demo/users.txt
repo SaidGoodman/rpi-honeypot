@@ -1,0 +1,10 @@
+root
+admin
+pi
+user
+test
+guest
+support
+ubuntu
+ftp
+nas

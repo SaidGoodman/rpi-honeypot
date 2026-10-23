@@ -1,0 +1,17 @@
+# Веб-страница мониторинга ловушки (порт 5000).
+# DynamicUser: systemd запускает страницу от временного пользователя без прав,
+# который может только читать файлы. Записывать что-либо в систему он не может.
+[Unit]
+Description=Страница мониторинга сетевой ловушки
+After=network.target opencanary.service
+
+[Service]
+Type=simple
+DynamicUser=yes
+Environment=CANARY_LOG=/var/log/opencanary.log
+ExecStart=/usr/bin/python3 /opt/rpi-honeypot/dashboard/app.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

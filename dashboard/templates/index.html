@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="refresh" content="5">  <!-- страница обновляется каждые 5 секунд -->
+    <title>Мониторинг ловушки</title>
+    <style>
+        :root {
+            --bg: #0f1419; --panel: #1a2129; --line: #2a333d;
+            --text: #e6e9ec; --muted: #8b96a1;
+            --red: #ff5c5c; --red-bg: #3a1d20; --orange: #ffb547; --green: #4cd18a;
+        }
+        * { box-sizing: border-box; }
+        body { margin: 0; padding: 24px; background: var(--bg); color: var(--text);
+               font: 15px/1.4 system-ui, "Segoe UI", Roboto, sans-serif; }
+        header { display: flex; justify-content: space-between; align-items: baseline;
+                 flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+        h1 { margin: 0; font-size: 26px; }
+        h2 { margin: 0 0 12px; font-size: 17px; color: var(--muted); font-weight: 600; }
+        .muted { color: var(--muted); }
+        .grid { display: grid; gap: 16px; margin-bottom: 16px; }
+        .cards { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+        .two { grid-template-columns: minmax(0, 3fr) minmax(0, 1fr) minmax(0, 1fr); }
+        @media (max-width: 1000px) { .two { grid-template-columns: minmax(0, 1fr); } }
+        .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+        .card .value { font-size: 36px; font-weight: 700; }
+        .card.alarm .value { color: var(--red); }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+        th { color: var(--muted); font-weight: 600; font-size: 13px; }
+        td { font-variant-numeric: tabular-nums; white-space: nowrap; }
+        td.wrap { white-space: normal; }
+        tr.attack td { background: var(--red-bg); }
+        tr.attack td:first-child { box-shadow: inset 3px 0 0 var(--red); }
+        .badge { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 13px;
+                 background: var(--red); color: #fff; margin-right: 4px; white-space: nowrap; }
+        .ok { color: var(--green); }
+        .login { color: var(--orange); }
+        .scroll { overflow-x: auto; }
+    </style>
+</head>
+<body>
+<header>
+    <h1>Мониторинг сетевой ловушки</h1>
+    <span class="muted">Обновлено в {{ now.strftime("%H:%M:%S") }} · лог: {{ log_file }}</span>
+</header>
+
+<!-- Счётчики -->
+<div class="grid cards">
+    <div class="panel card"><h2>Всего событий</h2><div class="value">{{ total }}</div></div>
+    <div class="panel card"><h2>Уникальных IP</h2><div class="value">{{ unique_ips }}</div></div>
+    <div class="panel card"><h2>Попыток входа</h2><div class="value">{{ login_count }}</div></div>
+    <div class="panel card {% if attackers %}alarm{% endif %}">
+        <h2>Атакующих IP</h2><div class="value">{{ attackers|length }}</div>
+    </div>
+</div>
+
+<!-- Обнаруженные атаки и частые логины/пароли -->
+<div class="grid two">
+    <div class="panel">
+        <h2>Обнаруженные атаки</h2>
+        {% if attackers %}
+        <div class="scroll"><table>
+            <tr><th>IP</th><th>Вид атаки</th><th>Событий</th><th>Первое</th><th>Последнее</th></tr>
+            {% for a in attackers %}
+            <tr>
+                <td>{{ a.ip }}</td>
+                <td class="wrap">{% for kind in a.kinds %}<span class="badge">{{ kind }}</span>{% endfor %}</td>
+                <td>{{ a.count }}</td>
+                <td>{{ a.first.strftime("%d.%m %H:%M:%S") }}</td>
+                <td>{{ a.last.strftime("%d.%m %H:%M:%S") }}</td>
+            </tr>
+            {% endfor %}
+        </table></div>
+        {% else %}
+        <p class="ok">Атак не обнаружено</p>
+        {% endif %}
+    </div>
+    <div class="panel">
+        <h2>Частые логины</h2>
+        <table>
+            {% for name, count in top_users %}<tr><td>{{ name }}</td><td>{{ count }}</td></tr>{% endfor %}
+        </table>
+        {% if not top_users %}<p class="muted">Пока нет</p>{% endif %}
+    </div>
+    <div class="panel">
+        <h2>Частые пароли</h2>
+        <table>
+            {% for password, count in top_passwords %}<tr><td>{{ password }}</td><td>{{ count }}</td></tr>{% endfor %}
+        </table>
+        {% if not top_passwords %}<p class="muted">Пока нет</p>{% endif %}
+    </div>
+</div>
+
+<!-- Последние события -->
+<div class="panel">
+    <h2>Последние события (новые сверху, не больше 100). Красным выделены события атакующих IP</h2>
+    <div class="scroll"><table>
+        <tr><th>Время</th><th>IP источника</th><th>Событие</th><th>Порт</th><th>Логин</th><th>Пароль</th></tr>
+        {% for e in events %}
+        <tr class="{% if e.src_host in attacks %}attack{% endif %}">
+            <td>{{ e.time.strftime("%d.%m %H:%M:%S") }}</td>
+            <td>{{ e.src_host }}</td>
+            <td>{{ names.get(e.logtype, "Код " ~ e.logtype) }}</td>
+            <td>{{ e.dst_port }}</td>
+            <td class="login">{{ e.logdata.get("USERNAME", "") }}</td>
+            <td class="login">{{ e.logdata.get("PASSWORD", "") }}</td>
+        </tr>
+        {% endfor %}
+    </table></div>
+    {% if not events %}<p class="muted">Событий пока нет. Ловушка ждёт гостей.</p>{% endif %}
+</div>
+</body>
+</html>

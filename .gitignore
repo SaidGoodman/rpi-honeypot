@@ -1,0 +1,12 @@
+# Личные настройки стенда (пароль Wi-Fi)
+config.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Локальные файлы для работы с Claude Code
+CLAUDE.md
+.claude/
