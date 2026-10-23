@@ -1,0 +1,8 @@
+flowchart LR
+    A["Атакующий<br/>nmap, hydra"]
+    subgraph PI["Raspberry Pi"]
+        OC["OpenCanary<br/>ловушка"] --> L[("opencanary.log<br/>JSON")]
+        L --> W["Flask<br/>страница :5000"]
+    end
+    A --> OC
+    W --> S["Монитор<br/>режим киоска"]

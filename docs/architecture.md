@@ -2,32 +2,9 @@
 
 ## Общая схема
 
-```mermaid
-flowchart LR
-    A["Ноутбук атакующего<br/>nmap, hydra, браузер"]
+![Схема системы](architecture.png)
 
-    subgraph PI["Raspberry Pi: Raspberry Pi OS (Debian 13)"]
-        direction TB
-        NET["Сетевой интерфейс wlan0<br/>точка доступа 192.168.50.1"]
-        IPT["iptables (mangle/PREROUTING)<br/>правила LOG для SYN и пакетов nmap"]
-        KERN["Ядро Linux → rsyslog<br/>/var/log/kern.log"]
-        OC["OpenCanary<br/>имитация SSH:22, Telnet:23,<br/>FTP:21, HTTP:80"]
-        LOG[("/var/log/opencanary.log<br/>JSON, одно событие на строку")]
-        WEB["dashboard/app.py (Flask)<br/>порт 5000"]
-        SSH["Настоящий sshd<br/>порт 2222, только ключ"]
-    end
-
-    SCREEN["Монитор / проектор<br/>Chromium в режиме киоска"]
-    ADMIN["Администратор"]
-
-    A -- "пакеты" --> NET
-    NET --> IPT --> KERN -- "читает модуль portscan" --> OC
-    NET -- "подключения к сервисам" --> OC
-    OC -- "пишет события" --> LOG
-    LOG -- "читает каждые 5 с" --> WEB
-    WEB -- "HTML" --> SCREEN
-    ADMIN -- "ssh -p 2222" --> SSH
-```
+Исходник схемы: [diagrams/architecture.mmd](diagrams/architecture.mmd) (Mermaid, можно открыть и поправить на [mermaid.live](https://mermaid.live)).
 
 Система состоит из двух модулей, которые связаны только через лог-файл:
 

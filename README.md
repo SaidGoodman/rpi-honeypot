@@ -19,16 +19,7 @@ Raspberry Pi в локальной сети притворяется стары�
 
 ## Как это работает
 
-```mermaid
-flowchart LR
-    A["Атакующий<br/>nmap, hydra"]
-    subgraph PI["Raspberry Pi"]
-        OC["OpenCanary<br/>ловушка"] --> L[("opencanary.log<br/>JSON")]
-        L --> W["Flask<br/>страница :5000"]
-    end
-    A --> OC
-    W --> S["Монитор<br/>режим киоска"]
-```
+![Схема работы](docs/overview.png)
 
 1. **Модуль ловушки.** OpenCanary принимает подключения к поддельным сервисам и с помощью iptables замечает пакеты на закрытые порты. Каждое событие записывается в лог одной строкой JSON.
 2. **Модуль мониторинга.** Скрипт [`dashboard/app.py`](dashboard/app.py) (около 120 строк) читает лог, находит атаки по правилам и показывает страницу, которая обновляется каждые 5 секунд.
@@ -168,6 +159,9 @@ $env:CANARY_LOG = "sample.log"; python app.py
 │   └── passwords.txt       # словарь паролей для hydra
 └── docs/
     ├── architecture.md     # устройство системы
+    ├── architecture.png    # подробная схема
+    ├── overview.png        # схема для README
+    ├── diagrams/           # исходники схем (Mermaid)
     └── screenshot.png
 ```
 
